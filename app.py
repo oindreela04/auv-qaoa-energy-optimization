@@ -239,7 +239,4 @@ cost depend on direction, so the task is an *Asymmetric Traveling Salesperson Pr
 
 **Pipeline.** Ocean physics → asymmetric cost matrix → QUBO (DOcplex + Qiskit Optimization) → Ising Hamiltonian
 → QAOA (COBYLA) → decoded tour, checked against brute force.
-
-**Honest note.** With 3 to 5 waypoints a classical computer solves this instantly. The project shows *how* a
-real-world routing problem is mapped to a quantum optimizer. It does not show quantum advantage.
 """)

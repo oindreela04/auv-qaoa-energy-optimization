@@ -128,8 +128,6 @@ Four waypoints: a base hub, an oil-spill edge, a fault line and a thermal-vent c
 - **Full 16-qubit QAOA** mostly failed: only about 0.1–0.3% of its measurements were valid routes, because penalty-based encodings waste most of the quantum search space.
 - **Lesson:** a smarter encoding mattered more than a deeper circuit.
 
-> **Honest note:** with only 6 possible routes, a classical computer solves this instantly. This project shows *how* a real-world routing problem can be mapped to a quantum optimizer. It does **not** claim a quantum speed-up.
-
 ---
 
 ## 🚀 Getting started
