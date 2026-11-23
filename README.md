@@ -1,85 +1,176 @@
-# QAOA Asymmetric Energy Optimization for Marine AUVs
+# 🌊 QAOA Asymmetric Energy Optimization for Marine AUVs
+
+**Plan the lowest-energy survey route for an underwater robot in an ocean current, using a quantum optimization algorithm.**
+
+🔗 **Live demo:** https://auv-quantum-energy-optimizer.streamlit.app/
 
 ![Dashboard](docs/dashboard.png)
 
-## What it does
+---
 
-An Autonomous Underwater Vehicle (AUV) must visit several survey points and return to base on one battery charge. Ocean currents make each leg cost a different amount depending on direction, so the problem is an **Asymmetric Traveling Salesperson Problem (ATSP)**. This project:
+## 📌 Overview
 
-1. turns the current field into an asymmetric energy-cost matrix,
-2. compiles the ATSP into a QUBO / Ising Hamiltonian (DOcplex + Qiskit Optimization),
-3. solves it with **QAOA** (p = 3, COBYLA) and checks the answer against an exact eigensolver and brute force,
-4. draws an interactive Plotly map with the current field, waypoints and optimal tour,
-5. wraps everything in an **interactive web dashboard** (Streamlit).
+Autonomous Underwater Vehicles (AUVs) carry out high-stakes subsea missions: inspecting oil pipelines, mapping the seabed, tracking oil spills and surveying thermal vents. They run on batteries, so every mission has to visit all its targets and get back to base on one charge.
 
-## Interactive dashboard
+On land, driving from A to B costs about the same as driving from B to A. **Underwater, that is not true.** Ocean currents push the vehicle:
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+- 🟢 **With the current**, the AUV moves faster and saves battery.
+- 🔴 **Against the current**, it slows down, fights drag and drains battery.
+
+The order in which the AUV visits its targets therefore matters, and the cost of a route depends on its direction. Mathematically this is the **Asymmetric Traveling Salesperson Problem (ATSP)**, a classic NP-hard optimization problem.
+
+This project builds a complete pipeline that:
+
+1. turns ocean-current physics into a direction-dependent **energy-cost matrix**,
+2. rewrites the routing problem as a **QUBO / Ising Hamiltonian** that a quantum computer can work on,
+3. solves it with the **Quantum Approximate Optimization Algorithm (QAOA)** in Qiskit,
+4. checks the answer against exact classical solvers,
+5. presents everything in an **interactive web dashboard** with an animated AUV.
+
+---
+
+## ⚙️ How it works
+
+```
+Ocean current + waypoints
+          │
+          ▼
+  ① Physics model ──► asymmetric cost matrix C[i][j]
+          │
+          ▼
+  ② QUBO formulation ──► binary variables + penalty constraints
+          │
+          ▼
+  ③ Ising Hamiltonian ──► qubit operator H_C
+          │
+          ▼
+  ④ QAOA (p layers) + COBYLA optimizer ──► best bitstring
+          │
+          ▼
+  ⑤ Decode ──► route  ──►  verified against brute force
 ```
 
-- **Current presets** (Default / Calm sea / Westward / South drift) plus sliders for current and AUV speed
-- **Editable waypoints table**: add, move or remove survey points (3 to 5)
-- **Solver picker**: exact brute force, 9-qubit reduced QAOA or 16-qubit full QAOA, with layers, iterations, shots and seed
-- **🚀 Run optimization** and **↺ Reset mission** buttons
-- **▶ Play AUV** animation: the vehicle visibly slows down on legs against the current
-- **Compare** the optimal tour with any other tour on the map
-- Tabs: Route map · All tours chart · Cost-matrix heatmap · QAOA insight (convergence, QAOA vs random guessing) · About
+### ① Physics: why costs are asymmetric
+
+The AUV's speed along a leg from point *i* to point *j* is its still-water speed plus the part of the current pointing along that leg:
+
+```
+V_eff(i→j) = V_b + V_current · d̂(i→j)
+C(i→j)     = distance(i, j) / V_eff(i→j)        (travel time ∝ energy at constant power)
+```
+
+Reversing a leg flips the sign of the current term, so **C(i→j) ≠ C(j→i)**. In the default mission one leg costs **2.75 times** more in one direction than the other.
+
+### ② QUBO: turning routing into binary variables
+
+Each choice "visit node *i* at step *t*" becomes a binary variable `x(i,t)`. The objective adds up the cost of every consecutive pair of visits:
+
+```
+minimize   Σ_t Σ_i Σ_j  C(i,j) · x(i,t) · x(j,t+1)
+```
+
+Two rules make a route valid: exactly one node per step, and each node visited exactly once. These rules are added to the objective as **quadratic penalty terms**, which gives an unconstrained problem (QUBO).
+
+### ③ & ④ QAOA: the quantum optimizer
+
+The QUBO is mapped to an Ising Hamiltonian `H_C`. QAOA prepares a quantum state by alternating "cost" and "mixer" layers:
+
+```
+|γ, β⟩ = Π_k  e^(−iβ_k H_M) · e^(−iγ_k H_C) · |+⟩^⊗n
+```
+
+A classical optimizer (COBYLA) tunes the angles γ and β to lower the expected cost. The lowest-cost bitstring measured is decoded back into a route.
+
+Two encodings are implemented:
+
+| Encoding | Qubits (4 waypoints) | Idea |
+|---|---|---|
+| **Full** | N² = 16 | Every node at every step, including the base |
+| **Reduced** | (N−1)² = 9 | Base is fixed as the first stop, which removes redundant qubits |
+
+---
+
+## 🖥️ Interactive dashboard
+
+| Feature | What you can do |
+|---|---|
+| 🌊 **Current presets** | One-click Default, Calm sea, Westward and South drift currents |
+| 🎚️ **Sliders** | Change current direction and strength, and the AUV's speed |
+| 📍 **Waypoint editor** | Add, move or delete survey points (3 to 5) |
+| ⚛️ **Solver picker** | Exact brute force, 9-qubit QAOA or 16-qubit QAOA; adjust layers, iterations, shots and seed |
+| 🚀 **Run / ↺ Reset** | Run the optimizer or go back to the default mission |
+| ▶️ **Play AUV** | Watch the vehicle travel the route; it visibly slows down against the current |
+| 🔀 **Compare tours** | Overlay any other route as a dashed line next to the optimal one |
+| 📊 **Analysis tabs** | All-tours chart, cost-matrix heatmap, QAOA convergence, and QAOA compared with random guessing |
 
 ![QAOA insight](docs/qaoa_insight.png)
 
-## Project structure
+---
 
-```
-auv-qaoa/
-├── app.py                   # interactive Streamlit dashboard
-├── main.py                  # run the whole pipeline from the command line
-├── config/mission.json      # waypoints, current, AUV speed (edit to try new missions)
-├── auv_qaoa/
-│   ├── physics.py           # effective speed + asymmetric cost matrix
-│   ├── qubo.py              # full (N²) and reduced ((N-1)²) QUBO encodings, decoding
-│   ├── solvers.py           # brute force, exact eigensolver, QAOA
-│   └── visualize.py         # interactive Plotly route map + convergence plot
-├── tests/test_pipeline.py   # 6 unit tests
-├── docs/                    # screenshots
-└── outputs/                 # results.json, route_map.html, convergence.html
-```
+## 📈 Results (default mission)
 
-## Command-line run
+Four waypoints: a base hub, an oil-spill edge, a fault line and a thermal-vent cluster, in a current of (0.8, 0.5).
+
+| Route | Energy | vs. best |
+|---|---|---|
+| **0 → 1 → 3 → 2 → 0** | **10.467** | ✅ best |
+| 0 → 2 → 3 → 1 → 0 | 10.686 | +2.1% |
+| 0 → 3 → 2 → 1 → 0 | 11.182 | +6.8% |
+| 0 → 1 → 2 → 3 → 0 | 11.641 | +11.2% |
+| 0 → 2 → 1 → 3 → 0 | 12.859 | +22.9% |
+| 0 → 3 → 1 → 2 → 0 | 12.950 | +23.7% |
+
+**Findings**
+
+- The best route saves **19.2%** energy compared with the worst one.
+- The best route and its exact reverse cover the same distance, yet the reverse costs 2.1% more. A planner that ignores currents cannot tell them apart.
+- **Reduced 9-qubit QAOA** found the optimal route in **5 out of 5** runs.
+- **Full 16-qubit QAOA** mostly failed: only about 0.1–0.3% of its measurements were valid routes, because penalty-based encodings waste most of the quantum search space.
+- **Lesson:** a smarter encoding mattered more than a deeper circuit.
+
+> **Honest note:** with only 6 possible routes, a classical computer solves this instantly. This project shows *how* a real-world routing problem can be mapped to a quantum optimizer. It does **not** claim a quantum speed-up.
+
+---
+
+## 🚀 Getting started
 
 ```bash
+git clone https://github.com/oindreela04/auv-qaoa-energy-optimization
+cd auv-qaoa-energy-optimization
 pip install -r requirements.txt
-python main.py                 # exact solver + 9-qubit QAOA, 5 seeds (~10 s)
-python main.py --full          # also run the 16-qubit QAOA (~40 s per seed)
-python main.py --exact-only    # quick check without QAOA
-python -m pytest tests         # run the tests
+
+streamlit run app.py              # interactive dashboard
+python main.py                    # command line: exact solver + 9-qubit QAOA
+python main.py --full             # also run the 16-qubit QAOA (slower)
+python -m pytest tests            # run the unit tests
 ```
 
-Open `outputs/route_map.html` in a browser. Hover over a leg to see its cost and the cost of the reverse leg.
+To try your own mission, edit `config/mission.json` (waypoints, current, AUV speed) or use the waypoint editor in the dashboard. The current must be slower than the AUV.
 
-## Physics model
+---
 
-- Effective speed along a leg: `V_eff = V_b + V_c · d̂_ij`
-- Leg cost (time, proportional to energy at constant power): `C_ij = distance_ij / V_eff`
-- Reversing a leg flips the sign of the current term, so `C_ij ≠ C_ji`.
+## 🗂️ Project structure
 
-## Results (default mission)
+```
+├── app.py                   # Streamlit dashboard
+├── main.py                  # command-line pipeline
+├── config/mission.json      # mission definition
+├── auv_qaoa/
+│   ├── physics.py           # effective speed + asymmetric cost matrix
+│   ├── qubo.py              # full and reduced QUBO encodings, route decoding
+│   ├── solvers.py           # brute force, exact eigensolver, QAOA
+│   └── visualize.py         # Plotly route map with AUV animation
+├── tests/test_pipeline.py   # unit tests
+└── docs/                    # screenshots
+```
 
-| Tour | Energy | vs. optimum |
-|---|---|---|
-| **0-1-3-2-0** | **10.467** | best |
-| 0-2-3-1-0 | 10.686 | +2.1% |
-| 0-3-2-1-0 | 11.182 | +6.8% |
-| 0-1-2-3-0 | 11.641 | +11.2% |
-| 0-2-1-3-0 | 12.859 | +22.9% |
-| 0-3-1-2-0 | 12.950 | +23.7% |
+## 🧰 Tech stack
 
-- The exact eigensolver finds the optimum in about 0.05 s.
-- 9-qubit QAOA (base fixed at step 0) finds the optimum in 5/5 seeds.
-- 16-qubit QAOA (full encoding) usually fails to find it: P(feasible) is about 0.1–0.3%. Exact outcomes vary with seed and shot count.
-- With only 6 possible tours this is a proof of concept. It does **not** show quantum advantage.
+Python · Qiskit · Qiskit Optimization · DOcplex · NumPy · Plotly · Streamlit · pytest
 
-## Trying your own mission
+## ⚠️ Limitations and future work
 
-Edit `config/mission.json`: add waypoints, change the current or the AUV speed. The current speed must be below the AUV speed. The full encoding needs N² qubits, so keep N ≤ 5 on a laptop simulator. Use the reduced encoding for 5 waypoints (16 qubits).
+- **Current model:** the current is uniform and steady. Next step: real, time-varying ocean-current data.
+- **Problem size:** small instances only, since the encoding needs N² qubits. Next step: XY mixers that keep QAOA inside valid routes.
+- **Hardware:** all runs use a noise-free simulator. Next step: noisy simulators and real quantum hardware.
+- **More vehicles:** next step is multi-AUV routing with battery and time-window limits.
