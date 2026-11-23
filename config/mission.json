@@ -1,0 +1,11 @@
+{
+  "waypoints": [
+    {"name": "Hub (0)",   "xy": [0.0, 0.0], "role": "Mission control hub / deployment base"},
+    {"name": "Alpha (1)", "xy": [2.0, 3.0], "role": "Oil-spill periphery"},
+    {"name": "Beta (2)",  "xy": [5.0, 1.0], "role": "Bathymetric fault line"},
+    {"name": "Gamma (3)", "xy": [6.0, 5.0], "role": "Thermal vent cluster"}
+  ],
+  "current": [0.8, 0.5],
+  "base_speed": 2.0,
+  "base_node": 0
+}
