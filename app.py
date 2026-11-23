@@ -40,11 +40,10 @@ st.markdown("""
 <div class="hero">
   <h1>🌊 QAOA Asymmetric Energy Optimizer for AUVs</h1>
   <div class="sub">Plan the lowest-energy survey loop for an underwater vehicle in an ocean current, with a quantum optimizer</div>
-  <span class="chip"><b>Suhina Chowdhury</b> · Roll 91</span>
-  <span class="chip"><b>Oindreela Saha</b> · Roll 92</span>
-  <span class="chip"><b>Asmita Ghorai</b> · Roll 152</span>
-  <span class="chip">CSE · Section B</span>
-  <span class="chip">Mentor: <b>Prof. Apurba Paul</b></span>
+  <span class="chip"><b>Qiskit</b> QAOA</span>
+  <span class="chip"><b>QUBO</b> / Ising</span>
+  <span class="chip"><b>Asymmetric</b> TSP</span>
+  <span class="chip">Ocean-current physics</span>
 </div>""", unsafe_allow_html=True)
 
 DEFAULT_WP = pd.DataFrame({
@@ -243,7 +242,4 @@ cost depend on direction, so the task is an *Asymmetric Traveling Salesperson Pr
 
 **Honest note.** With 3 to 5 waypoints a classical computer solves this instantly. The project shows *how* a
 real-world routing problem is mapped to a quantum optimizer. It does not show quantum advantage.
-
-**Team:** Suhina Chowdhury (91) · Oindreela Saha (92) · Asmita Ghorai (152), CSE Section B
-**Mentor:** Prof. Apurba Paul
 """)

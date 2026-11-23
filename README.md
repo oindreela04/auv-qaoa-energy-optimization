@@ -1,15 +1,5 @@
 # QAOA Asymmetric Energy Optimization for Marine AUVs
 
-Innovative project, Dept. of Computer Science & Engineering (CSE, Section B)
-
-| Team member | Roll No. | Enrollment No. |
-|---|---|---|
-| Suhina Chowdhury | 91 | ______________ |
-| Oindreela Saha | 92 | 12024052002024 |
-| Asmita Ghorai | 152 | 12024052002066 |
-
-**Mentor:** Prof. Apurba Paul
-
 ![Dashboard](docs/dashboard.png)
 
 ## What it does
